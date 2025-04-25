@@ -1,23 +1,27 @@
+import os
+import base64
 import discord
 from discord.ext import commands, tasks
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-from dotenv import load_dotenv
-import os
 from datetime import datetime, timedelta
 import json
 
-# Railway 환경에서 base64 인코딩된 creds 읽기
+# creds.json 자동 생성 (Render용)
 creds_encoded = os.getenv("CREDS_JSON")
 if creds_encoded:
     creds_json = base64.b64decode(creds_encoded).decode("utf-8")
     with open("creds.json", "w") as f:
         f.write(creds_json)
 else:
-    raise ValueError("❌ CREDS_JSON_B64 환경변수가 비어있거나 잘못되었습니다.")
+    creds_json_direct = os.getenv("CREDS_JSON")
+    if creds_json_direct:
+        with open("creds.json", "w") as f:
+            f.write(creds_json_direct)
+    else:
+        raise ValueError("❌ CREDS_JSON_B64 또는 CREDS_JSON 환경변수가 비어있습니다.")
 
 # Load environment variables
-load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 SHEET_URL = os.getenv("SHEET_URL")
 
@@ -29,7 +33,7 @@ sheet = client.open_by_url(SHEET_URL).worksheet("AOO Time")
 
 # Discord bot setup
 intents = discord.Intents.default()
-intents.message_content = True  # ✅ 명령어 인식에 필요함
+intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 MAX_PER_TIME = 30
@@ -58,13 +62,11 @@ class RegisterModal(discord.ui.Modal, title="AOO Registration"):
         data = sheet.get_all_values()
         header, rows = data[0], data[1:]
 
-        # Check if user already registered
         for row in rows:
             if row[1] == str(user.id) and row[6] == "Registered":
                 await interaction.response.send_message("❌ You have already registered. Use !cancel to cancel.", ephemeral=True)
                 return
 
-        # Check per-time limit
         count = sum(1 for row in rows if row[4] == self.selected_time and row[6] == "Registered")
         if count >= MAX_PER_TIME:
             await interaction.response.send_message(f"❌ {self.selected_time} is full.", ephemeral=True)
@@ -86,7 +88,6 @@ class RegisterModal(discord.ui.Modal, title="AOO Registration"):
         sheet.append_row(new_row)
         await interaction.response.send_message(f"✅ {self.nickname.value} registered for {self.selected_time}!", ephemeral=True)
 
-# Time selection view
 class TimeSelectView(discord.ui.View):
     @discord.ui.select(placeholder="Choose your AOO time", options=[
         discord.SelectOption(label=time, value=time) for time in AOO_TIMES
@@ -95,13 +96,11 @@ class TimeSelectView(discord.ui.View):
         selected_time = select.values[0]
         await interaction.response.send_modal(RegisterModal(selected_time))
 
-# Initial register button view
 class EntryView(discord.ui.View):
     @discord.ui.button(label="Register for AOO", style=discord.ButtonStyle.primary)
     async def register(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("Please select your AOO time:", view=TimeSelectView(), ephemeral=True)
 
-# Cancel command
 @bot.command(name="cancel")
 async def cancel(ctx):
     user_id = str(ctx.author.id)
@@ -113,7 +112,6 @@ async def cancel(ctx):
             return
     await ctx.send("⚠️ No active registration found.")
 
-# List command
 @bot.command(name="list")
 async def list_participants(ctx):
     data = sheet.get_all_values()
@@ -127,10 +125,9 @@ async def list_participants(ctx):
         message += f"- {row[2]} | {row[3]} | {row[4]}\n"
     await ctx.send(message)
 
-# Auto deletion every Sunday to remove data older than 2 weeks
 @tasks.loop(hours=24)
 async def auto_cleanup():
-    if datetime.utcnow().weekday() == 6:  # Sunday
+    if datetime.utcnow().weekday() == 6:
         data = sheet.get_all_values()
         header, rows = data[0], data[1:]
         today = datetime.utcnow()
