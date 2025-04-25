@@ -5,6 +5,12 @@ from oauth2client.service_account import ServiceAccountCredentials
 from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta
+import json
+
+# 🌟 creds.json 자동 생성 (Railway 환경용)
+if not os.path.exists("creds.json"):
+    with open("creds.json", "w") as f:
+        f.write(os.getenv("CREDS_JSON"))
 
 # Load environment variables
 load_dotenv()
@@ -19,6 +25,7 @@ sheet = client.open_by_url(SHEET_URL).worksheet("AOO Time")
 
 # Discord bot setup
 intents = discord.Intents.default()
+intents.message_content = True  # ✅ 명령어 인식에 필요함
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 MAX_PER_TIME = 30
@@ -142,7 +149,7 @@ async def on_ready():
     print(f"🤖 Logged in as {bot.user}")
     for guild in bot.guilds:
         for channel in guild.text_channels:
-            if channel.name == "aoo-signup":
+            if channel.name == "📂〡aoo-registration":
                 await channel.send("🛡 Click to register for Ark of Osiris time:", view=EntryView())
     auto_cleanup.start()
 
