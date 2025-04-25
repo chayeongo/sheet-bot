@@ -8,9 +8,12 @@ from datetime import datetime, timedelta
 import json
 
 # 🌟 creds.json 자동 생성 (Railway 환경용)
-if not os.path.exists("creds.json"):
+creds_json = os.getenv("CREDS_JSON")
+if creds_json and creds_json.strip():
     with open("creds.json", "w") as f:
-        f.write(os.getenv("CREDS_JSON"))
+        f.write(creds_json)
+else:
+    raise ValueError("❌ CREDS_JSON 환경변수가 비어 있거나 존재하지 않습니다.")
 
 # Load environment variables
 load_dotenv()
