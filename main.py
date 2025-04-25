@@ -1,5 +1,4 @@
 import os
-import base64
 import discord
 from discord.ext import commands, tasks
 import gspread
@@ -7,19 +6,13 @@ from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
 import json
 
-# creds.json 자동 생성 (Render용)
-creds_encoded = os.getenv("CREDS_JSON")
-if creds_encoded:
-    creds_json = base64.b64decode(creds_encoded).decode("utf-8")
+# Render용 creds.json 생성 (CREDS_JSON만 사용)
+creds_json_direct = os.getenv("CREDS_JSON")
+if creds_json_direct:
     with open("creds.json", "w") as f:
-        f.write(creds_json)
+        f.write(creds_json_direct)
 else:
-    creds_json_direct = os.getenv("CREDS_JSON")
-    if creds_json_direct:
-        with open("creds.json", "w") as f:
-            f.write(creds_json_direct)
-    else:
-        raise ValueError("❌ CREDS_JSON_B64 또는 CREDS_JSON 환경변수가 비어있습니다.")
+    raise ValueError("❌ CREDS_JSON 환경변수가 비어 있습니다.")
 
 # Load environment variables
 TOKEN = os.getenv("DISCORD_TOKEN")
