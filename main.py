@@ -7,13 +7,14 @@ import os
 from datetime import datetime, timedelta
 import json
 
-# 🌟 creds.json 자동 생성 (Railway 환경용)
-creds_json = os.getenv("CREDS_JSON")
-if creds_json and creds_json.strip():
+# Railway 환경에서 base64 인코딩된 creds 읽기
+creds_encoded = os.getenv("CREDS_JSON_B64")
+if creds_encoded:
+    creds_json = base64.b64decode(creds_encoded).decode("utf-8")
     with open("creds.json", "w") as f:
         f.write(creds_json)
 else:
-    raise ValueError("❌ CREDS_JSON 환경변수가 비어 있거나 존재하지 않습니다.")
+    raise ValueError("❌ CREDS_JSON_B64 환경변수가 비어있거나 잘못되었습니다.")
 
 # Load environment variables
 load_dotenv()
