@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import json
 
 # Railway 환경에서 base64 인코딩된 creds 읽기
-creds_encoded = os.getenv("CREDS_JSON_B64")
+creds_encoded = os.getenv("CREDS_JSON")
 if creds_encoded:
     creds_json = base64.b64decode(creds_encoded).decode("utf-8")
     with open("creds.json", "w") as f:
